@@ -16,7 +16,7 @@ webChat.config(['$routeProvider',
 webChat.controller('ChatCtrl', function ($scope, $http) {
     $scope.posts = "";
     $scope.updatePosts = function () {
-        $http.get('127.0.0.1:8080/chat/hello').
+        $http.get('http://127.0.0.1:8080/chat/hello').
       success(function (data, status, headers, config) {
           $scope.posts = data;
       }).
@@ -28,7 +28,7 @@ webChat.controller('ChatCtrl', function ($scope, $http) {
 
 
     $scope.sendPost = function () {
-        $http.get('127.0.0.1:8080/chat/hello', {msg:$scope.sendText}).
+        $http.get('http://127.0.0.1:8080/chat/hello', {msg:$scope.sendText}).
          success(function (data, status, headers, config) {
              $scope.updatePosts();
              $scope.sendText="";
