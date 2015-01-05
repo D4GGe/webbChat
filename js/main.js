@@ -46,7 +46,7 @@ webChat.controller('ChatCtrl', function ($scope, $http) {
 
 
     $scope.sendPost = function () {
-        $http.get('http://192.168.1.200:8080/chat/hello?msg=' + $scope.sendText).
+        $http.post('http://192.168.1.200:8080/chat/hello', {msg:$scope.sendText}).
          success(function (data, status, headers, config) {
              $scope.updatePosts();
              $scope.sendText="";
@@ -57,6 +57,6 @@ webChat.controller('ChatCtrl', function ($scope, $http) {
          })
     }
 
-    setInterval($scope.updatePosts, 100);
+    setInterval($scope.updatePosts, 2000);
     
 });
