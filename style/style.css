@@ -1,0 +1,21 @@
+﻿body {
+    width:100%;
+    margin:0;
+    padding:0;
+    list-style:none;
+
+}
+
+ul,li{
+    margin:0;
+    padding:0;
+    list-style:none;
+}
+
+#chatRoom{
+    padding:10px;
+    width:100%;
+    overflow-y:auto;
+    background-color:#bebebe;
+    height:800px;
+}
