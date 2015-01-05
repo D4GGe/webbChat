@@ -13,12 +13,30 @@ webChat.config(['$routeProvider',
   }]);
 
 
+
 webChat.controller('ChatCtrl', function ($scope, $http) {
-    $scope.posts = "";
+    $scope.posts = [];
+
+    $http.post('/', { msg: 'hello word!' }).
+  success(function (data, status, headers, config) {
+      // this callback will be called asynchronously
+      // when the response is available
+  }).
+  error(function (data, status, headers, config) {
+      // called asynchronously if an error occurs
+      // or server returns response with an error status.
+  });
+
+
     $scope.updatePosts = function () {
-        $http.get('http://127.0.0.1:8080/chat/hello').
+        var i = 0;
+        if ($scope.posts.length != 0)
+            i = $scope.posts[$scope.posts.length - 1].Id;
+
+        $http.get('http://192.168.1.200:8080/chat/hello?id='+i).
       success(function (data, status, headers, config) {
-          $scope.posts = data;
+          $scope.posts = $scope.posts.concat(data);
+
       }).
       error(function (data, status, headers, config) {
           // called asynchronously if an error occurs
@@ -28,7 +46,7 @@ webChat.controller('ChatCtrl', function ($scope, $http) {
 
 
     $scope.sendPost = function () {
-        $http.get('http://127.0.0.1:8080/chat/hello', {msg:$scope.sendText}).
+        $http.get('http://192.168.1.200:8080/chat/hello?msg=' + $scope.sendText).
          success(function (data, status, headers, config) {
              $scope.updatePosts();
              $scope.sendText="";
@@ -39,6 +57,6 @@ webChat.controller('ChatCtrl', function ($scope, $http) {
          })
     }
 
-    setInterval($scope.updatePosts, 1000);
+    setInterval($scope.updatePosts, 100);
     
 });
