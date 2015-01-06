@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/julienschmidt/httprouter"
+	"log"
 	"net/http"
-	"strings"
 )
 import _ "github.com/go-sql-driver/mysql"
 
@@ -21,14 +22,16 @@ type Message struct {
 	Id   int
 }
 
-func getChat(w http.ResponseWriter, r *http.Request) {
-	lastId := r.FormValue("id")
-	fmt.Printf(lastId)
+func setHeader(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	url := strings.Split(r.URL.Path[1:], "/")
-	args := url[len(url)-1]
-	//fmt.Printf("%s", args)
+}
+func getChat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	setHeader(w)
+	lastId := ps.ByName("id")
+	name := ps.ByName("name")
 	db, err := sql.Open("mysql", "root:@/webchat")
 	if err != nil {
 		panic(err.Error()) // Just for example purpose. You should use proper error handling instead of panic
@@ -41,7 +44,7 @@ func getChat(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stmtOut.Close()
 
-	rows, _ := stmtOut.Query(args, lastId)
+	rows, _ := stmtOut.Query(name, lastId)
 	msgs := []Message{}
 	for rows.Next() {
 		msg := Message{}
@@ -59,6 +62,8 @@ func getChat(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	http.HandleFunc("/chat/", getChat)
-	http.ListenAndServe(":8080", nil)
+	router := httprouter.New()
+	router.GET("/chat/:name/:id", getChat)
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
