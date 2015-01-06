@@ -58,6 +58,6 @@ webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
          })
     }
 
-    setInterval($scope.updatePosts, 2000);
+    setInterval($scope.updatePosts, 500);
     
 });
