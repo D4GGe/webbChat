@@ -4,7 +4,7 @@ webChat.config(['$routeProvider',
   function ($routeProvider) {
       $routeProvider.
         when('/room/:roomName', {
-            templateUrl: 'views/chatView.html',
+            templateUrl: 'views/chatViewNew.html',
             controller: 'ChatCtrl'
         }).
         otherwise({
