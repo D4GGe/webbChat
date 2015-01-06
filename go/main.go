@@ -81,7 +81,7 @@ func postMsg(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 	defer stmtOut.Close()
 	fmt.Fprint(w, "dafsadfsadfs")
-	fmt.Fprint(w, r.URL)
+	fmt.Fprint(w, r.FormValue("msg"))
 	stmtOut.Query(r.FormValue("msg"), ps.ByName("name"))
 
 }
