@@ -3,37 +3,27 @@
 webChat.config(['$routeProvider',
   function ($routeProvider) {
       $routeProvider.
-        when('/', {
+        when('/room/:roomName', {
             templateUrl: 'views/chatView.html',
             controller: 'ChatCtrl'
         }).
         otherwise({
-            redirectTo: '/'
+            redirectTo: '/room/hello'
         });
   }]);
 
 
 
-webChat.controller('ChatCtrl', function ($scope, $http) {
+webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
     $scope.posts = [];
-
-    $http.post('/', { msg: 'hello word!' }).
-  success(function (data, status, headers, config) {
-      // this callback will be called asynchronously
-      // when the response is available
-  }).
-  error(function (data, status, headers, config) {
-      // called asynchronously if an error occurs
-      // or server returns response with an error status.
-  });
-
+    $scope.roomName = $routeParams.roomName;
 
     $scope.updatePosts = function () {
         var i = 0;
         if ($scope.posts.length != 0)
             i = $scope.posts[$scope.posts.length - 1].Id;
 
-        $http.get('http://192.168.1.200:8080/chat/hello?id='+i).
+        $http.get('http://192.168.1.200:8080/chat/'+ $scope.roomName +'/'+i).
       success(function (data, status, headers, config) {
           $scope.posts = $scope.posts.concat(data);
 
@@ -46,7 +36,7 @@ webChat.controller('ChatCtrl', function ($scope, $http) {
 
 
     $scope.sendPost = function () {
-        $http.post('http://192.168.1.200:8080/chat/hello', {msg:$scope.sendText}).
+        $http.post('http://192.168.1.200:8080/chat/' + $scope.roomName, {msg:$scope.sendText}).
          success(function (data, status, headers, config) {
              $scope.updatePosts();
              $scope.sendText="";
