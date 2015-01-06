@@ -24,6 +24,7 @@ type Message struct {
 func getChat(w http.ResponseWriter, r *http.Request) {
 	lastId := r.FormValue("id")
 	fmt.Printf(lastId)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	url := strings.Split(r.URL.Path[1:], "/")
 	args := url[len(url)-1]
