@@ -69,6 +69,7 @@ func postMsg(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	db, err := sql.Open("mysql", "root:@/webchat")
+
 	if err != nil {
 		panic(err.Error()) // Just for example purpose. You should use proper error handling instead of panic
 	}
@@ -79,7 +80,8 @@ func postMsg(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	defer stmtOut.Close()
-
+	fmt.Fprint(w, "dafsadfsadfs")
+	fmt.Fprint(w, r.URL)
 	stmtOut.Query(r.FormValue("msg"), ps.ByName("name"))
 
 }
