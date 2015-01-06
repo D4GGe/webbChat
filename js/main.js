@@ -36,7 +36,7 @@ webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
 
 
     $scope.sendPost = function () {
-        $http.post('http://192.168.1.200:8080/chat/' + $scope.roomName, {msg:$scope.sendText}).
+        $http.post('http://192.168.1.200:8080/chat/' + $scope.roomName, {msg:$scope.sendText},[headers: {'Content-Type': 'application/x-www-form-urlencoded'}]).
          success(function (data, status, headers, config) {
              $scope.updatePosts();
              $scope.sendText="";
