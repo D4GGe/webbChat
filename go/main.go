@@ -22,14 +22,17 @@ type Message struct {
 	Id   int
 }
 
-func setHeader(w http.ResponseWriter) {
+func setHeader(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 }
 func getChat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	setHeader(w)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	lastId := ps.ByName("id")
 	name := ps.ByName("name")
 	db, err := sql.Open("mysql", "root:@/webchat")
@@ -60,10 +63,31 @@ func getChat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 }
 
+func postMsg(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	db, err := sql.Open("mysql", "root:@/webchat")
+	if err != nil {
+		panic(err.Error()) // Just for example purpose. You should use proper error handling instead of panic
+	}
+	defer db.Close()
+
+	stmtOut, err := db.Prepare("INSERT INTO messenges (user,text,room) VALUES (1,?,(SELECT id FROM chatrooms WHERE chatrooms.`name` = ?))")
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	defer stmtOut.Close()
+
+	stmtOut.Query(r.FormValue("msg"), ps.ByName("name"))
+
+}
 func main() {
 
 	router := httprouter.New()
 	router.GET("/chat/:name/:id", getChat)
-
+	router.POST("/chat/:name", postMsg)
+	router.Handle("OPTIONS", "/chat/:name", setHeader)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
