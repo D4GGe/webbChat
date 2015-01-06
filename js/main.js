@@ -49,7 +49,7 @@ webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
 
         $http(req).
          success(function (data, status, headers, config) {
-             $scope.updatePosts();
+             //$scope.updatePosts(); Quick fix
              $scope.sendText="";
          }).
          error(function (data, status, headers, config) {
