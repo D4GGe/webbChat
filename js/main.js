@@ -42,7 +42,7 @@ webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
 		 headers: {
 		   'Content-Type': 'application/x-www-form-urlencoded'
 		 },
-		 data: {msg:$scope.sendText},
+		 data: "msg="+$scope.sendText,
 		};
 
 
