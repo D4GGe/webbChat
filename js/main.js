@@ -12,20 +12,36 @@ webChat.config(['$routeProvider',
         });
   }]);
 
-
-
-webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
-    $scope.posts = [];
+webChat.controller('ChatCtrl', function ($scope, $http, $routeParams, $rootScope) {
+    if ($rootScope.posts == null)
+        $rootScope.posts = [];
     $scope.roomName = $routeParams.roomName;
+    if ($rootScope.posts[$scope.roomName] == null)
+        $rootScope.posts[$scope.roomName] = [];
+
+
+    $scope.posts = $rootScope.posts[$scope.roomName];
+
+
+    
 
     $scope.updatePosts = function () {
         var i = 0;
-        if ($scope.posts.length != 0)
-            i = $scope.posts[$scope.posts.length - 1].Id;
+        if ($rootScope.posts[$scope.roomName].length != 0)
+            i = $rootScope.posts[$scope.roomName][$rootScope.posts[$scope.roomName].length - 1].Id;
 
         $http.get('http://192.168.1.200:8080/chat/'+ $scope.roomName +'/'+i).
       success(function (data, status, headers, config) {
-          $scope.posts = $scope.posts.concat(data);
+          var elem = document.getElementById('scrollBody');
+         
+          $rootScope.posts[$scope.roomName] = $rootScope.posts[$scope.roomName].concat(data);
+          $scope.posts = $rootScope.posts[$scope.roomName];
+
+          if (elem.scrollHeight - elem.scrollTop < 1000 && data.length != 0)
+              setTimeout(function () {
+                  var elem = document.getElementById('scrollBody');
+                  elem.scrollTop = elem.scrollHeight;
+              }, 30)
 
       }).
       error(function (data, status, headers, config) {
@@ -34,6 +50,10 @@ webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
       })
     };
 
+    $scope.keyPress = function (e) {
+        if (e.which == 13)
+            $scope.sendPost();
+    }
 
     $scope.sendPost = function () {
     	var req = {
@@ -50,7 +70,7 @@ webChat.controller('ChatCtrl', function ($scope, $http, $routeParams) {
         $http(req).
          success(function (data, status, headers, config) {
              //$scope.updatePosts(); Quick fix
-             $scope.sendText="";
+             $scope.sendText = "";
          }).
          error(function (data, status, headers, config) {
              // called asynchronously if an error occurs
