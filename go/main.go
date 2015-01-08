@@ -4,15 +4,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"log"
 	"net/http"
+	"regexp"
 )
 import _ "github.com/go-sql-driver/mysql"
 
-type Customer struct {
-	Name    string `json:"name"`
-	Company string `json:"company"`
+var store = sessions.NewCookieStore([]byte("something-very-secret"))
+
+type User struct {
+	id      int
+	name    string
+	picture string
 }
 
 type Message struct {
@@ -22,19 +27,21 @@ type Message struct {
 	Id   int
 }
 
-func setHeader(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func setHeader(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 }
-func getChat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func getChat(w http.ResponseWriter, r *http.Request) {
+	reg, _ := regexp.Compile("p([a-z]+)ch")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	lastId := ps.ByName("id")
-	name := ps.ByName("name")
+	vars := mux.Vars(r)
+	lastId := vars["id"]
+	name := vars["name"]
 	db, err := sql.Open("mysql", "root:@/webchat")
 	if err != nil {
 		panic(err.Error()) // Just for example purpose. You should use proper error handling instead of panic
@@ -52,44 +59,68 @@ func getChat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	for rows.Next() {
 		msg := Message{}
 		rows.Scan(&msg.Id, &msg.User, &msg.Text, &msg.Time)
+		msg.Text = reg.ReplaceAllString(msg.Text, "\"<img src='http://a.deviantart.net/avatars/n/u/number1peachfan.gif?3'>\"")
 		msgs = append(msgs, msg)
 
 	}
 
 	t, err := json.MarshalIndent(msgs, "", "  ")
 	if err == nil {
+
 		fmt.Fprint(w, string(t))
 
 	}
 }
-
-func postMsg(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func postMsg(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	db, err := sql.Open("mysql", "root:@/webchat")
-
-	if err != nil {
-		panic(err.Error()) // Just for example purpose. You should use proper error handling instead of panic
-	}
-	defer db.Close()
-
-	stmtOut, err := db.Prepare("INSERT INTO messenges (user,text,room) VALUES (1,?,(SELECT id FROM chatrooms WHERE chatrooms.`name` = ?))")
-	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
-	}
-	defer stmtOut.Close()
-	fmt.Fprint(w, "dafsadfsadfs")
-	fmt.Fprint(w, r.FormValue("msg"))
-	stmtOut.Query(r.FormValue("msg"), ps.ByName("name"))
+	vars := mux.Vars(r)
+	name := vars["name"]
+	db, _ := sql.Open("mysql", "root:@/webchat")
+	//msg, room , userid
+	stmtOut, _ := db.Prepare("CALL send_msg('" + r.FormValue("msg") + "','" + name + "',1)")
+	stmtOut.Query()
+	//fmt.Println("room:" + name + "   msg:" + r.FormValue("msg"))
 
 }
+
+func login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	name := r.FormValue("name")
+	password := r.FormValue("password")
+	session, _ := store.Get(r, "user")
+	user := User{}
+	if len(name) > 3 && len(password) > 3 && session.Values["id"] == nil {
+		db, _ := sql.Open("mysql", "root:@/webchat")
+		stmtOut, _ := db.Prepare("SELECT `user`.id,`user`.`name` FROM `user` WHERE `user`.`name` =? and `user`.`password`=?")
+		rows, _ := stmtOut.Query(name, password)
+		if rows.Next() {
+			rows.Scan(&user.id, &user.name)
+			session.Values["name"] = user.id
+			session.Values["id"] = user.name
+			session.Save(r, w)
+		}
+
+	}
+	t, err := json.MarshalIndent(user, "", "  ")
+	if err == nil {
+		fmt.Fprint(w, string(t))
+	}
+
+}
+
 func main() {
 
-	router := httprouter.New()
-	router.GET("/chat/:name/:id", getChat)
-	router.POST("/chat/:name", postMsg)
-	router.Handle("OPTIONS", "/chat/:name", setHeader)
-	log.Fatal(http.ListenAndServe(":8080", router))
+	router := mux.NewRouter()
+	http.Handle("/", router)
+	router.HandleFunc("/login", login).Methods("POST")
+	router.HandleFunc("/chat/{name}/{id}", getChat).Methods("GET")
+	router.HandleFunc("/chat/{name}", postMsg).Methods("POST")
+	router.HandleFunc("/chat/{name}", setHeader).Methods("OPTIONS")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
