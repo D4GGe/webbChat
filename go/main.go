@@ -1,14 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"image"
+	"image/color"
+	"image/draw"
+	"image/jpeg"
 	"log"
+	"math"
 	"net/http"
 	"regexp"
+	"strconv"
 )
 import _ "github.com/go-sql-driver/mysql"
 
@@ -114,10 +121,77 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getCircCord(x0, y0, r, x float64) (float64, float64) {
+	y1 := y0 + math.Sqrt(r*r-x*x+2*x*x0-x0*x0)
+	y2 := y0 - math.Sqrt(r*r-x*x+2*x*x0-x0*x0)
+	return y1, y2
+
+}
+func genImg(w http.ResponseWriter, r *http.Request) {
+	m := image.NewRGBA(image.Rect(0, 0, 500, 500))
+	blue := color.RGBA{40, 40, 40, 255}
+	draw.Draw(m, m.Bounds(), &image.Uniform{blue}, image.ZP, draw.Src)
+	var y int
+	for x := m.Rect.Min.X; x < m.Rect.Max.X; x++ {
+		f := float64(x)
+		y1, y2 := getCircCord(250.0, 250.0, 250.0, f)
+		y12, y22 := getCircCord(250.0, 250.0, 230.0, f)
+		//fmt.Println("y1: " + strconv.FormatFloat(y1, 'f', 6, 64) + " y12: " + strconv.FormatFloat(y12, 'f', 6, 64))
+		//fmt.Println("y2: " + strconv.FormatFloat(y2, 'f', 6, 64) + " y22: " + strconv.FormatFloat(y22, 'f', 6, 64))
+
+		if int(y12) > 0 && int(y1) > 0 {
+
+			for y = int(y12); y < int(y1); y++ {
+
+				m.Set(x, int(y), color.RGBA{uint8(math.Abs(math.Sin(float64(x)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+100)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+200)/100)*100) + 120), 255})
+			}
+
+		} else {
+			for y = 250; y < int(y1); y++ {
+				m.Set(x, int(y), color.RGBA{uint8(math.Abs(math.Sin(float64(x)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+100)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+200)/100)*100) + 120), 255})
+			}
+
+		}
+
+		if int(y22) >= 0 && int(y2) >= 0 {
+			for y = int(y22); y > int(y2); y-- {
+
+				m.Set(x, int(y), color.RGBA{uint8(math.Abs(math.Sin(float64(x)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+100)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+200)/100)*100) + 120), 255})
+			}
+		} else {
+			for y = 250; y > int(y2); y-- {
+
+				m.Set(x, int(y), color.RGBA{uint8(math.Abs(math.Sin(float64(x)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+100)/100)*100) + 120), uint8(math.Abs(math.Sin((float64(x)+200)/100)*100) + 120), 255})
+			}
+
+		}
+
+	}
+	var img image.Image = m
+
+	writeImage(w, &img)
+}
+
+// writeImage encodes an image 'img' in jpeg format and writes it into ResponseWriter.
+func writeImage(w http.ResponseWriter, img *image.Image) {
+
+	buffer := new(bytes.Buffer)
+	if err := jpeg.Encode(buffer, *img, nil); err != nil {
+		log.Println("unable to encode image.")
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+	if _, err := w.Write(buffer.Bytes()); err != nil {
+		log.Println("unable to write image.")
+	}
+}
+
 func main() {
 
 	router := mux.NewRouter()
 	http.Handle("/", router)
+	router.HandleFunc("/img", genImg).Methods("GET")
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/chat/{name}/{id}", getChat).Methods("GET")
 	router.HandleFunc("/chat/{name}", postMsg).Methods("POST")
